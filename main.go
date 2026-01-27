@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // =========struct_Categories==============//
@@ -140,6 +141,9 @@ func updateCategories(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Categories not found", http.StatusNotFound)
 }
 
+// apply_mutex
+var mu sync.Mutex
+
 // =========delete_categories===================
 func deleteCategories(w http.ResponseWriter, r *http.Request) {
 	//==get_id==
@@ -152,10 +156,14 @@ func deleteCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//mutex_implement_here
+	mu.Lock()         //lock_access
+	defer mu.Unlock() //Ensure_it_unlock_when_finished
+
 	//==loop_find_categories_and_delete
 	for i, p := range categories {
 		if p.ID == id {
-			//==slice_before_after_index
+			//==slice_here==
 			categories = append(categories[:i], categories[i+1:]...)
 
 			//==fixing_logic_reindexing_before_return
