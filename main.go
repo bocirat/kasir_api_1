@@ -158,16 +158,18 @@ func deleteCategories(w http.ResponseWriter, r *http.Request) {
 			//==slice_before_after_index
 			categories = append(categories[:i], categories[i+1:]...)
 
+			//==fixing_logic_reindexing_before_return
+			for i := range categories {
+				categories[i].ID = i
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]string{
 				"message": "success delete",
 			})
 			return
 		}
-		//!!!_tried_to_reindex_here_but_not_work_
-		for i := range categories {
-			categories[i].ID = i
-		}
+
 	}
 
 	http.Error(w, "Categories Not Found", http.StatusNotFound)
