@@ -19,5 +19,5 @@
     - curl http://localhost:8080/api/categories/{id}
 * PUT update categories data by ID
     - curl -X PUT http://localhost:8080/api/categories -H "Content-Type: application/json" -d '{"name": "Juice","description": "All you can Juice!!"}'
-* DELETE delete categories by ID (currently didnt reindexing after delete)
+* DELETE delete categories by ID ~~(currently didnt reindexing after delete)~~ *fixed
     - curl -X DELETE http://localhost:8080/api/categories/{id}
