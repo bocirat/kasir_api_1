@@ -1,3 +1,5 @@
 kasir_api_1
 kasir_api_1.exe
 *.log
+.env
+trash.bak
