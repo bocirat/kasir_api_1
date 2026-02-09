@@ -15,17 +15,26 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 }
 
 // ==get_all_product======================//
-func (repo *ProductRepository) GetAll() ([]models.Product, error) {
+func (repo *ProductRepository) GetAll(name string) ([]models.Product, error) {
 	//===query_join================//
 	query := `
-		SELECT
+		SELECT 
 			p.id, p.name, p.price, p.stock, p.category_id,
 			c.id, c.name, c.description
 		FROM product p
 		LEFT JOIN category c ON p.category_id = c.id
 	`
 
-	rows, err := repo.db.Query(query)
+	var rows *sql.Rows
+	var err error
+
+	if name != "" {
+		query += " WHERE p.name ILIKE '%' || $1 || '%'"
+		rows, err = repo.db.Query(query, name)
+	} else {
+		rows, err = repo.db.Query(query)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -153,4 +162,32 @@ func (repo *ProductRepository) Delete(id int) error {
 	}
 
 	return err
+}
+
+func (repo *ProductRepository) DecreaseStock(tx *sql.Tx, id int, qty int) error {
+	query := "UPDATE product SET stock = stock - $1 WHERE id = $2 AND stock >= $1"
+
+	var result sql.Result
+	var err error
+
+	if tx != nil {
+		result, err = tx.Exec(query, qty, id)
+	} else {
+		result, err = repo.db.Exec(query, qty, id)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New("stok tidak cukup atau produk tidak ditemukan")
+	}
+
+	return nil
 }

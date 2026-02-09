@@ -17,7 +17,7 @@ func NewProductHandler(service *services.ProductService) *ProductHandler {
 	return &ProductHandler{service: service}
 }
 
-// HandleProducts - Dispatcher untuk route tanpa ID (/api/product)
+// HandleProducts - Dispatcher for route without ID (/api/product)
 func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -29,7 +29,7 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// HandleProductByID - Dispatcher untuk route dengan ID (/api/product/{id})
+// HandleProductByID - Dispatcher for route with ID (/api/product/{id})
 func (h *ProductHandler) HandleProductByID(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -44,8 +44,11 @@ func (h *ProductHandler) HandleProductByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-	// Service sudah melakukan JOIN, jadi results di sini sudah ada datanya kategori-nya
-	products, err := h.service.GetAll()
+	// Get query param "name"
+	name := r.URL.Query().Get("name")
+
+	// Service already doing JOIN, so results here already have category data
+	products, err := h.service.GetAll(name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -57,7 +60,7 @@ func (h *ProductHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var product models.Product
-	// Decode JSON body (termasuk category_id jika dikirim user)
+	// Decode JSON body (including category_id if sent by user)
 	err := json.NewDecoder(r.Body).Decode(&product)
 	if err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -76,7 +79,7 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	// REVISI: Pastikan prefix sesuai dengan main.go ("/api/product/")
+	// revision: make sure prefix match with main.go
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -84,7 +87,7 @@ func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hasil product ini sudah mengandung objek Category (Nested JSON)
+	// This product result already contains Category object (Nested JSON)
 	product, err := h.service.GetByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -96,7 +99,7 @@ func (h *ProductHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
-	// REVISI: Sesuaikan prefix path
+	// revision: make sure prefix match with main.go
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -111,7 +114,7 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Penting: ID dari URL menimpa ID dari Body (keamanan)
+	// Important: ID from URL overwrites ID from Body (security)
 	product.ID = id
 
 	err = h.service.Update(&product)
@@ -125,7 +128,7 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	// REVISI: Sesuaikan prefix path
+	// 	revision: make sure prefix match with main.go
 	idStr := strings.TrimPrefix(r.URL.Path, "/api/product/")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -145,27 +148,27 @@ func (h *ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// CreateBulk - Menerima array produk: [{}, {}, {}]
+// CreateBulk - Receiving array of products: [{}, {}, {}]
 func (h *ProductHandler) CreateBulk(w http.ResponseWriter, r *http.Request) {
 	var products []models.Product
 
 	// Decode JSON Array
 	err := json.NewDecoder(r.Body).Decode(&products)
 	if err != nil {
-		http.Error(w, "Format JSON salah. Pastikan menggunakan Array [...]", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON format. Make sure to use Array [...]", http.StatusBadRequest)
 		return
 	}
 
-	// Loop setiap produk dan simpan ke database
-	// Catatan: Idealnya ini pakai Transaction di Repository, tapi looping service ini cara termudah untuk pemula
+	// Loop each product and save to database
+	// Note: Ideally this uses Transaction in Repository, but looping this service is the easiest way for beginners
 	var createdProducts []models.Product
 
 	for _, p := range products {
-		// Panggil service create satu per satu
+		// Call create service one by one
 		err := h.service.Create(&p)
 		if err != nil {
-			// Jika satu gagal, kita bisa stop atau lanjut (disini kita return error)
-			http.Error(w, "Gagal insert produk: "+p.Name+" - "+err.Error(), http.StatusInternalServerError)
+			// If one fails, we can stop or continue (here we return error)
+			http.Error(w, "Failed to insert product: "+p.Name+" - "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 		createdProducts = append(createdProducts, p)
@@ -174,7 +177,7 @@ func (h *ProductHandler) CreateBulk(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Berhasil input banyak produk sekaligus",
+		"message": "Successfully inserted many products at once",
 		"data":    createdProducts,
 	})
 }

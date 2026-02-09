@@ -68,7 +68,15 @@ func main() {
 	http.HandleFunc("/api/product", productHandler.HandleProducts)
 	http.HandleFunc("/api/product/", productHandler.HandleProductByID)
 
-	//==tambahan_endpoint_bulk_insert========//
+	//========transaction===========//
+	transactionRepo := repositories.NewTransactionRepository(db)
+	transactionService := services.NewTransactionService(transactionRepo, productRepo, db)
+	transactionHandler := handlers.NewTransactionHandler(transactionService)
+
+	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout)
+	http.HandleFunc("/api/report-today", transactionHandler.HandleDailyReport)
+
+	//==additional_endpoint_bulk_insert========//
 	http.HandleFunc("/api/product/bulk", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			productHandler.CreateBulk(w, r)
